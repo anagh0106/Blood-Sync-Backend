@@ -5,57 +5,63 @@ const LoginModel = require("../Model/LoginModel");
 const otpmail = require("../Util/OTPMail")
 const otpSchema = require("../Model/OTPSchema")
 const encrypt = require("../Util/Encrypt")
-
+const session = require("express-session");
 
 const loginUser = async (req, res) => {
+    console.log(req.body);
     try {
         const email = req.body.email;
         const password = req.body.password;
         const user = await signupModel.findOne({ email: email });
+        console.log(email, password);
+
         const CreatedUser = await LoginModel.findOne({ email: email });
+
         if (CreatedUser) {
             if (user.email != CreatedUser.email) {
                 res.status(202).json({
-                    message: "Email ID Does't Exist",
+                    message: "Email ID Doesn't Exist",
                     status: 202
-                })
-            }
-            else {
+                });
+            } else {
                 if (user) {
                     const isPasswordMatch = await bcrypt.compare(password, user.password);
+
                     if (isPasswordMatch) {
-                        await mailer.sendMail(user.email, "Greeting Mail To New User", `Welcome ${user.firstname} ,
-                            You Have Successfully Logged In Our System.!
-                            Your Login Details are Email => ${req.body.email} Password => ${req.body.password}
-                            ThankYou For Choosing Us!`)
+                        await mailer.sendMail(
+                            user.email,
+                            "Greeting Mail To New User",
+                            `Welcome ${user.firstname} ,
+                             You Have Successfully Logged In Our System.!
+                             Your Login Details are Email => ${req.body.email} Password => ${req.body.password}
+                             Thank You For Choosing Us!`
+                        );
+
                         res.status(200).json({
                             message: "You Have Logged In Successfully",
                             UserInfo: {
                                 email: user.email,
-                                name: user.name, // Include only non-sensitive information
+                                name: user.name,
                             },
+                            redirectUrl: "/landingpage",
                         });
 
                     } else {
-
                         res.status(400).json({
                             message: "Email or Password Not Found",
                             UserInfo: [],
                         });
                     }
-
                 }
             }
-        }
-        else {
+        } else {
             res.status(400).json({
                 message: "You Have Not Signed Up Yet!!",
                 UserInfo: [],
             });
-
         }
-    }
-    catch (error) {
+    } catch (error) {
+        console.error(error);
         res.status(400).json({
             message: "Something Went Wrong!!",
             UserInfo: [],
@@ -72,7 +78,7 @@ const SendOTPToMail = async (req, res) => {
             });
         }
 
-        // Find the user with the provided email in the LoginModel
+        // Check if the email exists in LoginModel
         const emailRecord = await LoginModel.findOne({ email: userEmail });
         if (!emailRecord) {
             return res.status(404).json({
@@ -83,14 +89,8 @@ const SendOTPToMail = async (req, res) => {
         // Generate OTP
         const myotp = Math.floor(100000 + Math.random() * 900000); // 6-digit OTP
 
-        // Create OTP object
-        const otpObject = {
-            email: userEmail,
-            otp: myotp,
-        };
-
         // Save OTP in the database
-        await otpSchema.create(otpObject);
+        await otpSchema.create({ email: userEmail, otp: myotp, createdAt: Date.now() });
 
         // Retrieve user details from signupModel
         const user = await signupModel.findOne({ email: userEmail });
@@ -104,9 +104,7 @@ const SendOTPToMail = async (req, res) => {
         await otpmail.sendMail(
             userEmail,
             "OTP to Create a New Password",
-            `Hello ${user.firstname},Your One-Time Password (OTP)
-             for BloodSync is: ${myotp}.Please use this OTP to complete your action.
-             This code is valid for the next 2 minutes.`
+            `Hello ${user.firstname},Your One-Time Password (OTP) for BloodSync is: ${myotp}. This code is valid for the next 2 minutes.`
         );
 
         res.status(200).json({
@@ -123,7 +121,7 @@ const SendOTPToMail = async (req, res) => {
 const verifyOTP = async (req, res) => {
     // const newpassword = req.body;
     try {
-        const { email, otp, password } = req.body
+        const { email, otp, password, confirmPassword } = req.body
         // Validate input
         if (!email || !otp) {
             return res.status(400).json({ message: "Please provide both email and OTP" });
@@ -146,6 +144,11 @@ const verifyOTP = async (req, res) => {
             return res.status(401).json({ message: "Invalid OTP" });
         }
 
+        if (password != confirmPassword) {
+            return res.status(401).json({
+                message: "Passwords do not match",
+            })
+        }
         //  Hash The New Password
         const hashedPassword = encrypt.encryptPassowrd(password)
 
@@ -163,7 +166,8 @@ const verifyOTP = async (req, res) => {
         // Return Success Message
         res.status(200).json({
             message: "Password updated successfully",
-            data: { email: updatedUser.email, password: updatedUser.password }
+            data: { email: updatedUser.email, password: updatedUser.password },
+            redirectUrl: "/login",
         });
 
         await otpSchema.deleteOne({ email });
@@ -176,7 +180,6 @@ const verifyOTP = async (req, res) => {
         });
     }
 }
-
 
 const showPassword = async (req, res) => {
     try {
@@ -221,10 +224,22 @@ const showPassword = async (req, res) => {
     }
 }
 
+const logout = async (req, res) => {
+    req.session.destroy((err) => {
+        if (err) {
+            console.error('Error destroying session:', err);
+            return res.status(500).json({ message: 'Logout failed. Please try again.' });
+        }
+        res.clearCookie('connect.sid'); // Clear the session cookie
+        return res.status(200).json({ message: 'Logged out successfully!' });
+    });
+};
+
 
 module.exports = {
     loginUser,
     SendOTPToMail,
     verifyOTP,
     showPassword,
+    logout
 }

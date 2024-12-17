@@ -27,7 +27,6 @@ const BloodDonationForm = new schema({
         type: String,
         required: true,
     },
-
 })
 
 module.exports = mongooes.model("DonerForm", BloodDonationForm)

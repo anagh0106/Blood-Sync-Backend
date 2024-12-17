@@ -2,30 +2,85 @@ const signupModel = require("../Model/SignupModel")
 const encrypt = require("../Util/Encrypt")
 const loginmodel = require("../Model/LoginModel")
 
+// const SignUpUser = async (req, res) => {
+//     const hashedPassword = encrypt.encryptPassowrd(req.body.password);
+//     const UserObject = Object.assign(req.body, {
+//         password: hashedPassword
+//     })
+//     const saveUser = await signupModel.create(UserObject);
+//     if (saveUser) {
+//         res.status(200).json({
+//             message: "User created successfully",
+//             UserInfo: saveUser,
+
+//         },)
+
+//         const createdUser = await loginmodel.create(
+//             { email: saveUser.email, password: saveUser.password }
+//         )
+
+//         // redirect to login page
+//         res.status(200).json({
+//             message: "User created successfully. Redirecting to login page...",
+//             redirectUrl: "/Signin", // Frontend can handle the redirection
+//             UserInfo: saveUser,
+//         });
+//         console.log(createdUser)
+//     }
+//     else {
+//         res.status(400).json({
+//             message: "Failed to create user"
+//         })
+//     }
+
+// }
+
 const SignUpUser = async (req, res) => {
-    const hashedPassword = encrypt.encryptPassowrd(req.body.password);
-    const UserObject = Object.assign(req.body, {
-        password: hashedPassword
-    })
-    const saveUser = await signupModel.create(UserObject);
-    if (saveUser) {
-        res.status(200).json({
-            message: "User created successfully",
-            UserInfo: saveUser
-        },) 
-        const createdUser = await loginmodel.create(
-            { email: saveUser.email, password: saveUser.password }
-        )
-        console.log(createdUser)
-    }
-    else {
-        res.status(400).json({
-            message: "Failed to create user"
-        })
-    }
+    try {
+        // Check if the email already exists
+        const existingUser = await signupModel.findOne({ email: req.body.email });
+        if (existingUser) {
+            return res.status(400).json({
+                message: "Email already exists. Please use a different email.",
+            });
+        }
 
-}
+        // Encrypt password
+        const hashedPassword = encrypt.encryptPassowrd(req.body.password);
 
+        // Create user object
+        const UserObject = Object.assign(req.body, { password: hashedPassword });
+
+        // Save user to signup table
+        
+        const saveUser = await signupModel.create(UserObject);
+
+        if (saveUser) {
+            // Add the user to the login table
+            await loginmodel.create({
+                email: saveUser.email,
+                password: saveUser.password,
+            });
+
+            // Send a JSON response with a redirect URL
+            return res.status(200).json({
+                message: "User created successfully",
+                redirectUrl: "/signin", // Provide this for frontend redirection
+            });
+        } else {
+            return res.status(400).json({
+                message: "Failed to create user",
+            });
+        }
+    } catch (error) {
+        console.error("Error during signup:", error);
+
+        // Handle generic errors
+        return res.status(500).json({
+            message: "An error occurred during signup",
+        });
+    }
+};
 
 const getAllUser = async (req, res) => {
     try {
