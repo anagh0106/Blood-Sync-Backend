@@ -7,12 +7,10 @@ const FormValidation = zod.object({
         age: zod.number().min(18, { message: "You are not able to donate blood " })
             .max(65, { message: "Your Age Must Be Less Than 65" }),
         email: zod.string().email(),
-        mobile: zod.string()
+        phone: zod.string()
             .regex(/^\d{10}$/, { message: "Mobile must be a valid 10-digit number" }),
         city: zod.string(),
     })
 })
 
-module.exports = {
-    FormValidation
-}
+module.exports = FormValidation

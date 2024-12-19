@@ -1,6 +1,6 @@
 const donationform = require("../Model/DonationFormModel")
 const SignupModel = require("../Model/SignupModel")
-const validation = require("../Util/DonationFormValidation")
+// const { v4: uuidv4 } = require("uuid")
 
 const AddData = async (req, res) => {
     try {
@@ -14,6 +14,8 @@ const AddData = async (req, res) => {
         if (!existingUser) {
             return res.status(400).json({ message: "Email not registered." });
         }
+
+        // const virtualId = Math.floor(1000000 + Math.random() * 9000000)
 
         const userdata = { email, ...udata }
 
@@ -32,6 +34,8 @@ const AddData = async (req, res) => {
         })
     }
 }
+
+
 
 module.exports = {
     AddData,
