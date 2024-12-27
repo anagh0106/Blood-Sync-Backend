@@ -1,7 +1,7 @@
 const mongoose = require("mongoose")
 const schema = mongoose.Schema;
 
-const HospitalLogin = new schema({
+const AdminPanel = new schema({
     email: {
         type: String,
         required: true,
@@ -10,7 +10,6 @@ const HospitalLogin = new schema({
     password: {
         type: String,
         required: true,
-    }
+    },
 })
-
-module.exports = mongoose.model("RegisteredHospital", HospitalLogin)
+module.exports = mongoose.model("AdminPanel", AdminPanel)

@@ -1,60 +1,41 @@
 const signupModel = require("../Model/SignupModel")
 const encrypt = require("../Util/Encrypt")
-const loginmodel = require("../Model/LoginModel")
-
-// const SignUpUser = async (req, res) => {
-//     const hashedPassword = encrypt.encryptPassowrd(req.body.password);
-//     const UserObject = Object.assign(req.body, {
-//         password: hashedPassword
-//     })
-//     const saveUser = await signupModel.create(UserObject);
-//     if (saveUser) {
-//         res.status(200).json({
-//             message: "User created successfully",
-//             UserInfo: saveUser,
-
-//         },)
-
-//         const createdUser = await loginmodel.create(
-//             { email: saveUser.email, password: saveUser.password }
-//         )
-
-//         // redirect to login page
-//         res.status(200).json({
-//             message: "User created successfully. Redirecting to login page...",
-//             redirectUrl: "/Signin", // Frontend can handle the redirection
-//             UserInfo: saveUser,
-//         });
-//         console.log(createdUser)
-//     }
-//     else {
-//         res.status(400).json({
-//             message: "Failed to create user"
-//         })
-//     }
-
-// }
+const loginmodel = require("../Model/UserLoginModel")
+const adminModel = require("../Model/AdminPanelModel")
 
 const SignUpUser = async (req, res) => {
     try {
-        // Check if the email already exists
-        const existingUser = await signupModel.findOne({ email: req.body.email });
+        const { email, password } = req.body;
+
+        // Check if the email already exists in the signup table
+        const existingUser = await signupModel.findOne({ email });
         if (existingUser) {
             return res.status(400).json({
                 message: "Email already exists. Please use a different email.",
             });
         }
 
-        // Encrypt password
-        const hashedPassword = encrypt.encryptPassowrd(req.body.password);
+        // Encrypt the password
+        const hashedPassword = encrypt.encryptPassowrd(password); // Fixed typo
 
-        // Create user object
-        const UserObject = Object.assign(req.body, { password: hashedPassword });
+        // Check if the credentials are for the admin
+        if (email === "anagh0106@gmail.com" && password === "Anagh_0106") {
+            const AdminObject = { email, password: hashedPassword };
 
-        // Save user to signup table
-        
+            // Create admin in the admin table
+            const admin = await adminModel.create(AdminObject);
+            return res.status(201).json({
+                message: "Admin created successfully",
+                adminInfo: admin,
+            });
+        }
+
+
+        // Create user object for the signup table
+        const UserObject = { ...req.body, password: hashedPassword };
+
+        // Save user to the signup table
         const saveUser = await signupModel.create(UserObject);
-
         if (saveUser) {
             // Add the user to the login table
             await loginmodel.create({
@@ -63,7 +44,7 @@ const SignUpUser = async (req, res) => {
             });
 
             // Send a JSON response with a redirect URL
-            return res.status(200).json({
+            return res.status(201).json({
                 message: "User created successfully",
                 redirectUrl: "/signin", // Provide this for frontend redirection
             });
@@ -77,7 +58,7 @@ const SignUpUser = async (req, res) => {
 
         // Handle generic errors
         return res.status(500).json({
-            message: "An error occurred during signup",
+            message: "An error occurred during signup. Please try again later.",
         });
     }
 };
@@ -103,6 +84,7 @@ const getAllUser = async (req, res) => {
         })
     }
 }
+
 const UpdateDetailsByEmail = async (req, res) => {
     try {
         const email = req.body.email; // Get email from the route parameter
