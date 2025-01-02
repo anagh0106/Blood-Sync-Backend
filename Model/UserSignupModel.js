@@ -19,8 +19,12 @@ const SignupSchema = new schema({
     password: {
         type: String,
         required: true,
+    },
+    role: {
+        type: String,
+        required: true,
     }
 
 })
 
-module.exports = mongoose.model("Signup", SignupSchema);
+module.exports = mongoose.model("User SignUp", SignupSchema);

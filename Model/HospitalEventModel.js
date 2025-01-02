@@ -1,29 +1,30 @@
 const mongoose = require("mongoose")
 const schema = mongoose.Schema;
-
 const HospitalEvent = new schema({
+    eventid: {
+        type: String,
+        unique: true, // Ensures the eventid is unique
+    },
     eventname: {
         type: String,
         required: true,
     },
     eventdate: {
-        type: String, // date
+        type: String,
         required: true,
     },
     eventtime: {
-        type: String, // time
+        type: String,
         required: true,
     },
     eventlocation: {
-        type: schema.Types.ObjectId,
-        ref: "Hospital"
+        type: String,
+        ref: "Hospital",
+        required: true,
     },
     eventdescription: {
         type: String,
         required: true,
-    },
-    eventppllimit: {
-        type: Number,
     },
 })
 

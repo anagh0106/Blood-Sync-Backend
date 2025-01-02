@@ -1,12 +1,18 @@
 const mongoose = require("mongoose")
 const schema = mongoose.Schema;
+const { v4: uuidv4 } = require("uuid")
 
 const HospitalModel = new schema({
-    Country: {
+    hospitalEventId: {
+        type: String,
+        unique: true, // Ensures the hospital ID is unique
+        default: uuidv4, // Automatically generates a UUID
+    },
+    country: {
         type: String,
         required: true,
     },
-    State: {
+    state: {
         type: String,
         required: true,
     },
@@ -14,15 +20,11 @@ const HospitalModel = new schema({
         type: String,
         required: true
     },
-    taluka: {
+    city: {
         type: String,
         required: true
     },
     hname: {
-        type: String,
-        required: true,
-    },
-    htype: {
         type: String,
         required: true,
     },

@@ -1,4 +1,4 @@
-const donationform = require("../Model/DonationFormModel")
+const donationform = require("../Model/UserDonationFormModel")
 // const SignupModel = require("../Model/SignupModel")
 
 const AddData = async (req, res) => {

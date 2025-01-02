@@ -1,74 +1,97 @@
-const signupModel = require("../Model/SignupModel")
+const signupModel = require("../Model/UserSignupModel")
 const bcrypt = require("bcrypt")
 const mailer = require("../Util/MailUtil")
-const LoginModel = require("../Model/LoginModel");
+const LoginModel = require("../Model/UserLoginModel");
 const otpmail = require("../Util/OTPMail")
 const otpSchema = require("../Model/OTPSchema")
 const encrypt = require("../Util/Encrypt")
-// const session = require("express-session");
+const superAdminLoginModel = require("../Model/AdminLoginModel")
+const jwt = require("jsonwebtoken")
+
+// New Code For Testing Purpose
 
 const loginUser = async (req, res) => {
-    console.log(req.body);
     try {
-        const email = req.body.email;
-        const password = req.body.password;
-        const user = await signupModel.findOne({ email: email });
-        console.log(email, password);
+        const { email, password } = req.body;
 
-        const CreatedUser = await LoginModel.findOne({ email: email });
+        // Fetch user data from the database
+        const user = await signupModel.findOne({ email });
 
-        if (CreatedUser) {
-            if (user.email != CreatedUser.email) {
-                res.status(202).json({
-                    message: "Email ID Doesn't Exist",
-                    status: 202
-                });
-            } else {
-                if (user) {
-                    const isPasswordMatch = await bcrypt.compare(password, user.password);
-
-                    if (isPasswordMatch) {
-                        await mailer.sendMail(
-                            user.email,
-                            "Greeting Mail To New User",
-                            `Welcome ${user.firstname} ,
-                             You Have Successfully Logged In Our System.!
-                             Your Login Details are Email => ${req.body.email} Password => ${req.body.password}
-                             Thank You For Choosing Us!`
-                        );
-
-                        res.status(200).json({
-                            message: "You Have Logged In Successfully",
-                            UserInfo: {
-                                email: user.email,
-                                name: user.name,
-                            },
-                            redirectUrl: "/landingpage",
-                        });
-
-                    } else {
-                        res.status(400).json({
-                            message: "Email or Password Not Found",
-                            UserInfo: [],
-                        });
-                    }
-                }
-            }
-        } else {
-            res.status(400).json({
-                message: "You Have Not Signed Up Yet!!",
-                UserInfo: [],
+        // Check if the user exists
+        if (!user || !user.role || user.email !== email) {
+            return res.status(404).json({
+                message: "Email ID Doesn't Exist",
+                status: 404,
             });
         }
-    } catch (error) {
-        console.error(error);
-        res.status(400).json({
+
+        // Validate password
+        const isPasswordMatch = await bcrypt.compare(password, user.password);
+        if (!isPasswordMatch) {
+            return res.status(400).json({
+                message: "Email or Password Not Found",
+                status: 400,
+            });
+        }
+
+        // Role-based logic
+        let emailSubject;
+        let emailContent;
+        // let redirectUrl;
+        let createdToken;
+
+        emailSubject = "Welcome to Blood Sync!";
+        emailContent = `
+                Welcome to Blood Sync, ${user.firstname}!
+                We’re excited to have you on board. Your login was successful,
+                and you can now access all the features and services of our platform.
+
+                If you need any assistance or have questions, feel free to 
+                reach out to our support team at support@bloodsync.com.
+
+                Thank you for choosing Blood Sync. Together, we’re making a difference!
+
+                Best regards,
+                The Blood Sync Team
+            `;
+        redirectUrl = "/landingpage";
+
+        // Generate JWT token
+        createdToken = jwt.sign(
+            {
+                email: user.email,
+                id: user._id,
+                role: user.role,
+            },
+            "Galu_0106", // Secret key
+            { expiresIn: "1h" }
+        );
+
+        // Save login information to Login model
+        await LoginModel.create({
+            email: user.email,
+            password: user.password, // Ensure this is hashed
+            role: user.role,
+        });
+        // Send email notification
+        await mailer.sendMail(user.email, emailSubject, emailContent);
+        // Respond to regular user
+        return res.status(200).json({
+            success: true,
+            message: "You Have Logged In Successfully",
+            token: createdToken,
+            User: user,
+        });
+    }
+    catch (error) {
+        console.error("Error during login:", error);
+
+        res.status(500).json({
             message: "Something Went Wrong!!",
-            UserInfo: [],
+            status: 500,
         });
     }
 };
-
 const SendOTPToMail = async (req, res) => {
     try {
         const userEmail = req.body.email;
@@ -102,7 +125,7 @@ const SendOTPToMail = async (req, res) => {
             await otpmail.sendMail(
                 userEmail,
                 "OTP to Create a New Password",
-                `Hello ${user.firstname}, Your One-Time Password (OTP) for BloodSync is: ${myotp}.`
+                `Hello ${user.firstname}, Your One - Time Password(OTP) for BloodSync is: ${myotp}.`
             );
             console.log("OTP email sent successfully");
         } catch (emailError) {
@@ -122,7 +145,6 @@ const SendOTPToMail = async (req, res) => {
         });
     }
 };
-
 const verifyOTP = async (req, res) => {
     try {
         const { otp, email } = req.body;
@@ -136,7 +158,7 @@ const verifyOTP = async (req, res) => {
         }
 
         // Fetch stored OTP from database (case-insensitive email match)
-        const storedOtp = await otpSchema.findOne({ email: new RegExp(`^${email}$`, "i") });
+        const storedOtp = await otpSchema.findOne({ email: new RegExp(`^ ${email} $`, "i") });
 
         // Check if OTP entry exists for the provided email
         if (!storedOtp) {
@@ -160,8 +182,6 @@ const verifyOTP = async (req, res) => {
         });
     }
 };
-
-
 const updatePassword = async (req, res) => {
     try {
         const { password, confirmPassword } = req.body;
@@ -203,7 +223,6 @@ const updatePassword = async (req, res) => {
         });
     }
 };
-
 const logout = async (req, res) => {
     req.session.destroy((err) => {
         if (err) {

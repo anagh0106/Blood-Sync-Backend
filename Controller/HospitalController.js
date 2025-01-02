@@ -5,17 +5,18 @@ const bcrypt = require("bcrypt")
 
 const AddHospital = async (req, res) => {
     try {
-        const { hname, district, taluka, id, password } = req.body;
+        const hinfo = req.body;
 
+        console.log(hinfo)
         // Input validation
-        if (!hname || !district || !taluka || !id || !password) {
+        if (!hinfo) {
             return res.status(400).json({
                 message: "Please Fill All Details",
             });
         }
 
         // Encrypt password
-        const hashedPassword = encrypt.encryptPassowrd(password);
+        const hashedPassword = encrypt.encryptPassowrd(req.body.password);
 
         // Combine req.body with hashed password
         const Hospital = { ...req.body, password: hashedPassword };
@@ -26,7 +27,7 @@ const AddHospital = async (req, res) => {
         if (CreatedHospital) {
             // Create login entry for hospital
             await HospitalLogin.create({
-                id: CreatedHospital.id,
+                email: CreatedHospital.email,
                 password: CreatedHospital.password,
             });
 
@@ -49,7 +50,6 @@ const AddHospital = async (req, res) => {
         });
     }
 };
-
 const deleteHospital = async (req, res) => {
     try {
 
@@ -88,8 +88,7 @@ const deleteHospital = async (req, res) => {
         });
     }
 
-}
-
+};
 const update = async (req, res) => {
     try {
         const id = req.body.id;
@@ -124,10 +123,32 @@ const update = async (req, res) => {
         });
     }
 
-}
+};
+const getAllHospital = async (req, res) => {
+    try {
+        const hinfo = await HospitalModel.find();
+
+        if (!hinfo) {
+            return res.status(404).json({
+                message: " Hospital Not Found! , Make Sure You Have Registered",
+            });
+        }
+        res.status(200).json({
+            message: "Hospital Found",
+            data: hinfo,
+        });
+    }
+    catch (error) {
+        res.status(500).json({
+            message: "An error occurred while updating user details",
+            error: error.message
+        });
+    }
+};
 
 module.exports = {
     AddHospital,
     deleteHospital,
     update,
+    getAllHospital,
 };

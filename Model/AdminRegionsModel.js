@@ -14,7 +14,7 @@ const RegionModel = new schema({
         type: String,
         required: true
     },
-    taluka: {
+    city: {
         type: String,
         required: true
     },

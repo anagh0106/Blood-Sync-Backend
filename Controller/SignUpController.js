@@ -1,9 +1,9 @@
-const signupModel = require("../Model/SignupModel")
+const signupModel = require("../Model/UserSignupModel")
 const encrypt = require("../Util/Encrypt")
 const loginmodel = require("../Model/UserLoginModel")
-const adminModel = require("../Model/AdminPanelModel")
 
-const SignUpUser = async (req, res) => {
+
+const AddUser = async (req, res) => {
     try {
         const { email, password } = req.body;
 
@@ -18,34 +18,26 @@ const SignUpUser = async (req, res) => {
         // Encrypt the password
         const hashedPassword = encrypt.encryptPassowrd(password); // Fixed typo
 
-        // Check if the credentials are for the admin
-        if (email === "anagh0106@gmail.com" && password === "Anagh_0106") {
-            const AdminObject = { email, password: hashedPassword };
-
-            // Create admin in the admin table
-            const admin = await adminModel.create(AdminObject);
-            return res.status(201).json({
-                message: "Admin created successfully",
-                adminInfo: admin,
-            });
-        }
-
-
         // Create user object for the signup table
         const UserObject = { ...req.body, password: hashedPassword };
 
         // Save user to the signup table
         const saveUser = await signupModel.create(UserObject);
+        // if (saveUser.role === "Super Admin" || saveUser.role === "Admin") {
+        //     // await
+        // }
         if (saveUser) {
             // Add the user to the login table
-            await loginmodel.create({
-                email: saveUser.email,
-                password: saveUser.password,
-            });
+            // await loginmodel.create({
+            //     email: saveUser.email,
+            //     password: saveUser.password,
+            //     role: saveUser.role,
+            // });
 
             // Send a JSON response with a redirect URL
             return res.status(201).json({
                 message: "User created successfully",
+                userData: saveUser,
                 redirectUrl: "/signin", // Provide this for frontend redirection
             });
         } else {
@@ -62,7 +54,6 @@ const SignUpUser = async (req, res) => {
         });
     }
 };
-
 const getAllUser = async (req, res) => {
     try {
         const users = await signupModel.find()
@@ -84,8 +75,7 @@ const getAllUser = async (req, res) => {
         })
     }
 }
-
-const UpdateDetailsByEmail = async (req, res) => {
+const UpdateDetails = async (req, res) => {
     try {
         const email = req.body.email; // Get email from the route parameter
         const userdata = req.body; // Get user data from the request body
@@ -123,8 +113,7 @@ const UpdateDetailsByEmail = async (req, res) => {
         });
     }
 };
-
-const deleteUserByEmail = async (req, res) => {
+const deleteUser = async (req, res) => {
     try {
         const email = req.body.email;
         const userdata = req.body;
@@ -158,10 +147,9 @@ const deleteUserByEmail = async (req, res) => {
         });
     }
 }
-
 module.exports = {
-    SignUpUser,
+    AddUser,
     getAllUser,
-    UpdateDetailsByEmail,
-    deleteUserByEmail
+    UpdateDetails,
+    deleteUser,
 }
