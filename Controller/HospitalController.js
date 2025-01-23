@@ -145,10 +145,26 @@ const getAllHospital = async (req, res) => {
         });
     }
 };
+const getHospitalCount = async (req, res) => {
+    try {
+        // Get the live count of users from the database
+        const hcount = await HospitalModel.countDocuments();
 
+        // Log the count (optional)
+        console.log(`Total users: ${hcount}`);
+
+        // Send the count as a response
+        res.status(200).json({ count: hcount });
+    } catch (error) {
+        // Handle errors
+        console.error('Error fetching user count:', error);
+        res.status(500).json({ message: 'Error fetching user count', error });
+    }
+};
 module.exports = {
     AddHospital,
     deleteHospital,
     update,
     getAllHospital,
+    getHospitalCount,
 };

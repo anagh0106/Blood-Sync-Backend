@@ -8,4 +8,5 @@ router.post("/", validation.UserValidation(signupValidation), SignupController.A
 router.get("/get", SignupController.getAllUser)
 router.put("/update", SignupController.UpdateDetails)
 router.delete("/delete", SignupController.deleteUser);
+router.get("/count", SignupController.getuserCount)
 module.exports = router

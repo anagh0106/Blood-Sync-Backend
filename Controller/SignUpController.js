@@ -2,11 +2,11 @@ const signupModel = require("../Model/UserSignupModel")
 const encrypt = require("../Util/Encrypt")
 const loginmodel = require("../Model/UserLoginModel")
 
-
+let users = []
 const AddUser = async (req, res) => {
     try {
         const { email, password } = req.body;
-
+        const alluser = await signupModel.find({ email })
         // Check if the email already exists in the signup table
         const existingUser = await signupModel.findOne({ email });
         if (existingUser) {
@@ -35,6 +35,7 @@ const AddUser = async (req, res) => {
             // });
 
             // Send a JSON response with a redirect URL
+            // users.push(alluser)
             return res.status(201).json({
                 message: "User created successfully",
                 userData: saveUser,
@@ -147,9 +148,27 @@ const deleteUser = async (req, res) => {
         });
     }
 }
+const getuserCount = async (req, res) => {
+    try {
+        // Get the live count of users from the database
+        const userCount = await signupModel.countDocuments();
+
+        // Log the count (optional)
+        console.log(`Total users: ${userCount}`);
+
+        // Send the count as a response
+        res.status(200).json({ count: userCount });
+    } catch (error) {
+        // Handle errors
+        console.error('Error fetching user count:', error);
+        res.status(500).json({ message: 'Error fetching user count', error });
+    }
+};
+
 module.exports = {
     AddUser,
     getAllUser,
     UpdateDetails,
     deleteUser,
+    getuserCount,
 }
