@@ -7,9 +7,90 @@ const otpSchema = require("../Model/OTPSchema")
 const encrypt = require("../Util/Encrypt")
 const superAdminLoginModel = require("../Model/AdminLoginModel")
 const jwt = require("jsonwebtoken")
-
 // New Code For Testing Purpose
+// const loginUser = async (req, res) => {
+//     try {
+//         const { email, password } = req.body;
 
+//         // Fetch user data from the database
+//         const user = await signupModel.findOne({ email });
+
+//         // Check if the user exists
+//         if (!user || !user.role || user.email !== email) {
+//             return res.status(404).json({
+//                 message: "Email ID Doesn't Exist",
+//                 status: 404,
+//             });
+//         }
+
+//         // Validate password
+//         const isPasswordMatch = await bcrypt.compare(password, user.password);
+//         if (!isPasswordMatch) {
+//             return res.status(400).json({
+//                 message: "Email or Password Not Found",
+//                 status: 400,
+//             });
+//         }
+
+//         // Role-based logic
+//         let emailSubject;
+//         let emailContent;
+//         // let redirectUrl;
+//         let createdToken;
+
+//         emailSubject = "Welcome to Blood Sync!";
+//         emailContent = `
+//                 Welcome to Blood Sync, ${user.firstname}!
+//                 We’re excited to have you on board. Your login was successful,
+//                 and you can now access all the features and services of our platform.
+
+//                 If you need any assistance or have questions, feel free to 
+//                 reach out to our support team at support@bloodsync.com.
+
+//                 Thank you for choosing Blood Sync. Together, we’re making a difference!
+
+//                 Best regards,
+//                 The Blood Sync Team
+//             `;
+//         redirectUrl = "/landingpage";
+
+//         // Generate JWT token
+//         createdToken = jwt.sign(
+//             {
+//                 email: user.email,
+//                 id: user._id,
+//                 role: user.role,
+//             },
+//             "Galu_0106", // Secret key
+//             { expiresIn: "1h" }
+//         );
+
+//         // Save login information to Login model
+//         await LoginModel.create({
+//             email: user.email,
+//             password: user.password, // Ensure this is hashed
+//             role: user.role,
+//         });
+//         // Send email notification
+//         await mailer.sendMail(user.email, emailSubject, emailContent);
+//         // Respond to regular user
+//         return res.status(200).json({
+//             success: true,
+//             message: "You Have Logged In Successfully",
+//             token: createdToken,
+//             User: user,
+//         });
+//     }
+//     catch (error) {
+//         console.error("Error during login:", error);
+
+//         res.status(500).json({
+//             message: "Something Went Wrong!!",
+//             error: error,
+//             status: 500,
+//         });
+//     }
+// };
 const loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -35,13 +116,8 @@ const loginUser = async (req, res) => {
         }
 
         // Role-based logic
-        let emailSubject;
-        let emailContent;
-        // let redirectUrl;
-        let createdToken;
-
-        emailSubject = "Welcome to Blood Sync!";
-        emailContent = `
+        let emailSubject = "Welcome to Blood Sync!";
+        let emailContent = `
                 Welcome to Blood Sync, ${user.firstname}!
                 We’re excited to have you on board. Your login was successful,
                 and you can now access all the features and services of our platform.
@@ -54,10 +130,9 @@ const loginUser = async (req, res) => {
                 Best regards,
                 The Blood Sync Team
             `;
-        redirectUrl = "/landingpage";
 
         // Generate JWT token
-        createdToken = jwt.sign(
+        const createdToken = jwt.sign(
             {
                 email: user.email,
                 id: user._id,
@@ -67,14 +142,28 @@ const loginUser = async (req, res) => {
             { expiresIn: "1h" }
         );
 
-        // Save login information to Login model
-        await LoginModel.create({
-            email: user.email,
-            password: user.password, // Ensure this is hashed
-            role: user.role,
-        });
+        // ✅ Fix: Check if the email already exists in LoginModel
+        const existingLogin = await LoginModel.findOne({ email: user.email });
+
+        if (existingLogin) {
+            // ✅ If the user already has an entry, update the existing record
+            await LoginModel.updateOne(
+                { email: user.email },
+                { $set: { password: user.password, role: user.role, lastLogin: new Date() } }
+            );
+        } else {
+            // ✅ If the user is logging in for the first time, create a new entry
+            await LoginModel.create({
+                email: user.email,
+                password: user.password, // Ensure this is hashed
+                role: user.role,
+                lastLogin: new Date()
+            });
+        }
+
         // Send email notification
         await mailer.sendMail(user.email, emailSubject, emailContent);
+
         // Respond to regular user
         return res.status(200).json({
             success: true,
@@ -82,16 +171,17 @@ const loginUser = async (req, res) => {
             token: createdToken,
             User: user,
         });
-    }
-    catch (error) {
+    } catch (error) {
         console.error("Error during login:", error);
 
         res.status(500).json({
             message: "Something Went Wrong!!",
+            error: error,
             status: 500,
         });
     }
 };
+
 const SendOTPToMail = async (req, res) => {
     try {
         const userEmail = req.body.email;

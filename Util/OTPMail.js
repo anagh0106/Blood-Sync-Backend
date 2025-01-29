@@ -7,7 +7,7 @@ const sendMail = async (to, subject, text) => {
         service: "gmail",
         auth: {
             user: "anagh0106@gmail.com",  // Your email address
-            pass: "tsnceegwtmlculgt"      // Your Gmail app-specific password
+            pass: "klonoloqcfneojqe"      // Your Gmail app-specific password
         }
     });
 

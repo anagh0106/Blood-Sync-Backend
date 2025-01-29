@@ -2,35 +2,36 @@ const mailer = require("nodemailer");
 const path = require("path");
 
 const sendMail = async (to, subject, text) => {
-    // Creating the transporter with Gmail service
     const transport = mailer.createTransport({
-        service: "gmail",
+        host: "smtp.gmail.com",
+        port: 465,
+        secure: true,
         auth: {
-            user: "anagh0106@gmail.com",  // Your email address
-            pass: "tsnceegwtmlculgt"      // Your Gmail app-specific password
+            user: "anagh0106@gmail.com",
+            pass: "klonoloqcfneojqe" // Replace with the correct App Password
         }
     });
 
     const mailOptions = {
-        from: "anagh0106@gmail.com",  // Sender's email
-        to: to,                      // Recipient's email
-        subject: subject,            // Subject of the email
-        html: `<h1>${text}</h1>`,     // HTML body content
-        attachments: [                // Corrected plural form of attachment
+        from: `"Anagh" <anagh0106@gmail.com>`, // Ensure sender email matches the authenticated account
+        to: to,
+        subject: subject,
+        html: `<h1>${text}</h1>`,
+        attachments: [
             {
-                filename: "welcome.gif",  // The name the file will have in the email
+                filename: "welcome.gif",
                 path: path.join(__dirname, "welcome.gif"),
             }
         ]
     };
 
     try {
-        const mailRes = await transport.sendMail(mailOptions); // Send the email
+        const mailRes = await transport.sendMail(mailOptions);
         console.log("Mail Sent Successfully: ", mailRes);
         return mailRes;
     } catch (error) {
         console.error('Error sending mail: ', error);
-        throw error; // It's better to throw the error with the correct object
+        throw error;
     }
 };
 
